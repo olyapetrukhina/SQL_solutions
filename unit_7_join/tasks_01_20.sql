@@ -271,26 +271,22 @@ with couriers_age as (SELECT courier_id,
                                        extract(year
                                 FROM   age((SELECT max(time)
                                             FROM   user_actions), birth_date)) as user_age
-                                FROM   users), top_orders as(SELECT c.courier_id,
-                                    c.order_id,
-                                    u.user_id,
-                                    o.product_ids
-                             FROM   (SELECT courier_id,
-                                            order_id
-                                     FROM   courier_actions
-                                     WHERE  action = 'deliver_order') as c
-                                 LEFT JOIN (SELECT user_id,
-                                                   order_id
-                                            FROM   user_actions
-                                            WHERE  action = 'create_order') as u using(order_id)
-                                 LEFT JOIN orders as o using(order_id)
-                             ORDER BY array_length(product_ids, 1) desc limit 5)
+                                FROM   users), top_orders as (SELECT c.courier_id,
+                                     c.order_id,
+                                     u.user_id,
+                                     o.product_ids
+                              FROM   courier_actions c
+                                  LEFT JOIN user_actions u using(order_id)
+                                  LEFT JOIN orders o using(order_id)
+                              WHERE  c.action = 'deliver_order'
+                                 and u.action = 'create_order'
+                              ORDER BY array_length(o.product_ids, 1) desc limit 5)
 SELECT t.order_id,
        t.user_id,
        ua.user_age::int,
        t.courier_id,
        ca.courier_age::int
-FROM   top_orders as t
-    LEFT JOIN couriers_age as ca using(courier_id)
-    LEFT JOIN users_age as ua using(user_id)
-ORDER BY order_id
+FROM   top_orders t
+    LEFT JOIN couriers_age ca using(courier_id)
+    LEFT JOIN users_age ua using(user_id)
+ORDER BY t.order_id
