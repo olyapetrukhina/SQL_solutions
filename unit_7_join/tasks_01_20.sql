@@ -271,22 +271,17 @@ with couriers_age as (SELECT courier_id,
                                        extract(year
                                 FROM   age((SELECT max(time)
                                             FROM   user_actions), birth_date)) as user_age
-                                FROM   users), top_orders as (SELECT c.courier_id,
-                                     c.order_id,
-                                     u.user_id,
-                                     o.product_ids
-                              FROM   courier_actions c
-                                  LEFT JOIN user_actions u using(order_id)
-                                  LEFT JOIN orders o using(order_id)
-                              WHERE  c.action = 'deliver_order'
-                                 and u.action = 'create_order'
-                              ORDER BY array_length(o.product_ids, 1) desc limit 5)
-SELECT t.order_id,
-       t.user_id,
+                                FROM   users)
+SELECT c.order_id,
+       u.user_id,
        ua.user_age::int,
-       t.courier_id,
+       c.courier_id,
        ca.courier_age::int
-FROM   top_orders t
+FROM   courier_actions c
+    LEFT JOIN user_actions u using(order_id)
+    LEFT JOIN orders o using(order_id)
     LEFT JOIN couriers_age ca using(courier_id)
     LEFT JOIN users_age ua using(user_id)
-ORDER BY t.order_id
+WHERE  c.action = 'deliver_order'
+   and u.action = 'create_order'
+ORDER BY array_length(o.product_ids, 1) desc, c.order_id limit 5
