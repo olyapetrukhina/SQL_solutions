@@ -111,3 +111,30 @@ SELECT count(order_id) as orders,
        round(count(case when array_length(product_ids, 1) >= 5 then order_id end)::decimal / count(order_id)::decimal,
              2) as large_orders_share
 FROM   orders;
+
+-- Task 18
+
+SELECT user_id,
+       count(action) filter (WHERE action = 'create_order') as orders_count,
+       round(count(action) filter (WHERE action = 'cancel_order') / count(action) filter (WHERE action = 'create_order')::decimal,
+             2) as cancel_rate
+FROM   user_actions
+GROUP BY user_id having count(action) filter (
+WHERE  action = 'create_order') > 3
+   and (count(action) filter (
+WHERE  action = 'cancel_order') / count(action) filter (
+WHERE  action = 'create_order')::decimal) >= 0.5
+ORDER BY user_id
+
+-- Task 19
+
+select DATE_PART('isodow', time)::integer as weekday_number, 
+    to_char(time, 'Dy') as weekday,
+    count(order_id) filter (where action = 'create_order')::integer as created_orders,
+    count(order_id) filter (where action = 'cancel_order')::integer as canceled_orders,
+    count(order_id) filter (where action = 'create_order')::integer - count(action) filter (where action = 'cancel_order')::integer as actual_orders,
+    round((count(order_id) filter (WHERE action = 'create_order') - count(order_id) filter (WHERE action = 'cancel_order'))::decimal / count(order_id) filter (where action = 'create_order'), 3) as success_rate
+from user_actions
+where time between '2022-08-24' and '2022-09-07'
+group by weekday_number, weekday
+order by weekday_number 
