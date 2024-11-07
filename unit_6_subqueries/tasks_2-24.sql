@@ -90,14 +90,9 @@ ORDER BY price desc, product_id
 
 -- Task 11
 
-with created_orders as (SELECT order_id
-                        FROM   user_actions
-                        WHERE  action = 'create_order')
-SELECT count(order_id) as orders_count
-FROM   courier_actions
-WHERE  action = 'accept_order'
-   and order_id not in (SELECT order_id
-                     FROM   created_orders)
+select count(order_id) as orders_count
+from courier_actions
+where action = 'accept_order' and order_id not in (select order_id from courier_actions where action = 'deliver_order')
 
 -- Task 12
 
