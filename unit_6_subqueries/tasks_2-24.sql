@@ -96,14 +96,12 @@ where action = 'accept_order' and order_id not in (select order_id from courier_
 
 -- Task 12
 
-with delivered_orders as (SELECT order_id
-                          FROM   courier_actions
-                          WHERE  action = 'deliver_order')
-SELECT count(order_id) as orders_count
+SELECT count(order_id) as orders_canceled,
+       count(order_id) filter (WHERE action = 'deliver_order') as orders_canceled_and_delivered
 FROM   courier_actions
-WHERE  action = 'accept_order'
-   and order_id not in (SELECT order_id
-                     FROM   delivered_orders)
+WHERE  order_id in (SELECT order_id
+                    FROM   user_actions
+                    WHERE  action = 'cancel_order')
 
 -- Task 13
 
