@@ -146,19 +146,17 @@ ORDER BY order_id
 
 -- Task 17
 
-with ids_of_couriers as (SELECT courier_id as var_
-                         FROM   courier_actions
-                         WHERE  date_part('month', time) = 9
-                            and date_part('year', time) = 2022
-                            and action = 'deliver_order'
-                         GROUP BY courier_id having count(order_id) >= 30)
 SELECT courier_id,
        birth_date,
        sex
 FROM   couriers
-WHERE  courier_id in (SELECT var_
-                      FROM   ids_of_couriers)
-ORDER BY courier_id;
+WHERE  courier_id in (SELECT courier_id
+                      FROM   courier_actions
+                      WHERE  action = 'deliver_order'
+                         and date_part('year', time) = 2022
+                         and date_part('month', time) = 09
+                      GROUP BY courier_id having count(distinct order_id) >= 30)
+ORDER BY courier_id
 
 -- Task 18
 
@@ -175,32 +173,30 @@ WHERE  order_id in (SELECT var_2
 
 -- Task 19
 
-with users_age as (SELECT user_id,
-                          date_part('year', age((SELECT max(time)
-                                          FROM   user_actions), birth_date)) as age
-                   FROM   users)
+with user_ages as(SELECT user_id,
+                         date_part('year', age((SELECT max(time)
+                                         FROM   user_actions), birth_date))::integer as age
+                  FROM   users)
 SELECT user_id,
-       coalesce(age, (SELECT round(avg(age))
-               FROM   users_age))::integer as age
-FROM   users_age
+       coalesce(age, (SELECT avg(age)
+               FROM   user_ages))::integer as age
+FROM   user_ages
 ORDER BY user_id
 
 -- Task 20
 
-with relevant_orders as(SELECT order_id
-                        FROM   orders
-                        WHERE  array_length (product_ids, 1) > 5
-                           and order_id not in (SELECT order_id
-                                             FROM   user_actions
-                                             WHERE  action = 'cancel_order'))
-SELECT order_id,
-       min (time) as time_accepted,
-       max (time) as time_delivered,
-       extract(epoch
+SELECT DISTINCT order_id,
+                min(time) as time_accepted,
+                max(time) as time_delivered,
+                extract(epoch
 FROM   (max(time) - min(time))/60)::integer as delivery_time
 FROM   courier_actions
 WHERE  order_id in (SELECT order_id
-                    FROM   relevant_orders)
+                    FROM   orders
+                    WHERE  array_length(product_ids, 1) > 5)
+   and order_id not in (SELECT order_id
+                     FROM   user_actions
+                     WHERE  action = 'cancel_order')
 GROUP BY order_id
 ORDER BY order_id
 
