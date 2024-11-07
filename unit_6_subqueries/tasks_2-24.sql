@@ -202,18 +202,13 @@ ORDER BY order_id
 
 -- Task 21
 
-with first_orders as(SELECT user_id,
-                            min(time::date) as date
-                     FROM   user_actions
-                     WHERE  order_id not in (SELECT order_id
-                                             FROM   user_actions
-                                             WHERE  action = 'cancel_order')
-                     GROUP BY user_id
-                     ORDER BY user_id)
-SELECT DISTINCT date,
-                count(user_id) as first_orders
-FROM   first_orders
-GROUP BY date
+select first_date as date, count(user_id) as first_orders
+from (select user_id, min(time)::date as first_date
+    from user_actions 
+    where order_id not in (select order_id from user_actions where action = 'cancel_order')
+    group by user_id) as t1
+group by date
+order by date
 
 -- Task 22
   
